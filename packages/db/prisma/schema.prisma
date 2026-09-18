@@ -10,7 +10,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+
 }
+
 
 //------ Recheck-------
 
@@ -31,6 +33,7 @@ model Game {
   startedAt   DateTime
   endsAt      DateTime
   gameMember  GameMember[]
+  question    Question[]
   
 }
 
@@ -53,8 +56,44 @@ model UserRating {
 
 model Friends {
   id          String    @id   @default(uuid())
+  status      FriendsStatus   @default(pending)
   receiverId  String
   senderId    String
+
   receiver    Users     @relation("receiver" ,fields: [receiverId], references: [id])
   sender      Users     @relation("sender"   ,fields: [senderId], references: [id])
+}
+
+enum FriendsStatus{
+  accepted
+  rejected
+  pending
+}
+
+
+model Question {
+  id          String        @id     @default(uuid())
+  gameId      String
+  game        Game          @relation(fields: [gameId], references: [id])
+  answer      Int
+  operation1  Int
+  operation2  Int
+  sign        QuestionSign
+}
+
+model QuestionAnswer {
+  id          String
+  questionId  String
+  question    Question    @relation(fields: [questionId], references: [id])
+  answer      Int
+  gameId      Game        @relation(fields: [gameid], references: [id])
+  userId      String
+  user        Users       @relation(fields: [userId], references: [id])
+}
+
+enum QuestionSign{
+  SUM
+  MINUS
+  MUL
+  DIV
 }
