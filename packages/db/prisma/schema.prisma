@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//------ Recheck-------
+
+model Users {
+  id        String @id @default(uuid())
+  email     String @unique
+  password  String 
+  username  String @unique
+  rating    UserRating?
+  gameMember GameMember[]
+  receiver    Friends[]     @relation("receiver")
+  sender      Friends[]     @relation("sender")
+}
+
+model Game {
+  id          String @id @default(uuid())
+  timelimit   Int
+  startedAt   DateTime
+  endsAt      DateTime
+  gameMember  GameMember[]
+  
+}
+
+
+model GameMember {
+  id     String  @id  @default(uuid())
+  gameId String  
+  game   Game    @relation(references: [id], fields: [gameId])
+  userId String  
+  user   Users   @relation(references: [id], fields: [userId])
+}
+
+
+model UserRating {
+  id    String    @id @default(uuid())
+  userId String   @unique
+  user   Users    @relation(references: [id], fields: [userId])
+}
+
+
+model Friends {
+  id          String    @id   @default(uuid())
+  receiverId  String
+  senderId    String
+  receiver    Users     @relation("receiver" ,fields: [receiverId], references: [id])
+  sender      Users     @relation("sender"   ,fields: [senderId], references: [id])
+}
