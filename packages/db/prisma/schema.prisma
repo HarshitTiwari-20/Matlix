@@ -21,10 +21,11 @@ model Users {
   email     String @unique
   password  String 
   username  String @unique
-  rating    UserRating?
-  gameMember GameMember[]
-  receiver    Friends[]     @relation("receiver")
-  sender      Friends[]     @relation("sender")
+  rating          UserRating?
+  gameMember      GameMember[]
+  questionAnswer  QuestionAnswer[]
+  receiver        Friends[]     @relation("receiver")
+  sender          Friends[]     @relation("sender")
 }
 
 model Game {
@@ -32,8 +33,11 @@ model Game {
   timelimit   Int
   startedAt   DateTime
   endsAt      DateTime
-  gameMember  GameMember[]
-  question    Question[]
+  gameMember      GameMember[]
+  question        Question[]
+  questionAnswer  QuestionAnswer[]
+  status          GameStatus[]
+  gameId          Int
   
 }
 
@@ -44,13 +48,25 @@ model GameMember {
   game   Game    @relation(references: [id], fields: [gameId])
   userId String  
   user   Users   @relation(references: [id], fields: [userId])
+
+  status  GameMemberStatus
+}
+enum GameMemberStatus{
+  WON
+  LOSS
 }
 
+enum GameStatus {
+  Runnig 
+  Searching_for_Player
+  Ended
+}
 
 model UserRating {
   id    String    @id @default(uuid())
   userId String   @unique
   user   Users    @relation(references: [id], fields: [userId])
+  rating  Int
 }
 
 
@@ -75,18 +91,19 @@ model Question {
   id          String        @id     @default(uuid())
   gameId      String
   game        Game          @relation(fields: [gameId], references: [id])
-  answer      Int
+  answer      QuestionAnswer[]
   operation1  Int
   operation2  Int
   sign        QuestionSign
 }
 
 model QuestionAnswer {
-  id          String
+  id          String      @id @default(uuid())
   questionId  String
   question    Question    @relation(fields: [questionId], references: [id])
   answer      Int
-  gameId      Game        @relation(fields: [gameid], references: [id])
+  gameId      String
+  game        Game        @relation(fields: [gameId], references: [id])
   userId      String
   user        Users       @relation(fields: [userId], references: [id])
 }

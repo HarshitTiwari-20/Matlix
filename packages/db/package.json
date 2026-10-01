@@ -11,6 +11,10 @@
   "peerDependencies": {
     "typescript": "^5"
   },
+  "scripts": {
+    "generate": "bunx prisma generates"
+  }, 
+
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7",
