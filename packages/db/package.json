@@ -1,5 +1,5 @@
 {
-  "name": "db",
+  "name": "@repo/db",
   "module": "index.ts",
   "type": "module",
   "private": true,
@@ -14,6 +14,10 @@
   "scripts": {
     "generate": "bunx prisma generates"
   }, 
+
+  "exports": {
+    "./client": "./index.ts"
+  },
 
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

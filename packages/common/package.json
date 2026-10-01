@@ -1,5 +1,5 @@
 {
-  "name": "common",
+  "name": "@repo/common",
   "module": "index.ts",
   "type": "module",
   "private": true,
@@ -8,5 +8,11 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "exports": {
+    "./common": "./index.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
   }
 }
