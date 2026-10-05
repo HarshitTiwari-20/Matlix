@@ -8,5 +8,11 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/ws": "^8.18.2",
+    "jsonwebtoken": "^9.0.3",
+    "ws": "^8.22.0"
   }
 }
