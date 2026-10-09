@@ -17,10 +17,10 @@ datasource db {
 //------ Recheck-------
 
 model Users {
-  id        String @id @default(uuid())
-  email     String @unique
-  password  String 
-  username  String @unique
+  id              String @id @default(uuid())
+  email           String @unique
+  password        String 
+  username        String @unique
   rating          UserRating?
   gameMember      GameMember[]
   questionAnswer  QuestionAnswer[]
@@ -29,15 +29,16 @@ model Users {
 }
 
 model Game {
-  id          String @id @default(uuid())
-  timelimit   Int
-  startedAt   DateTime
-  endsAt      DateTime
+  id              String @id @default(uuid())
+  timelimit       Int
+  startedAt       DateTime
+  endsAt          DateTime
   gameMember      GameMember[]
   question        Question[]
-  questionAnswer  QuestionAnswer[]
+  Answer          QuestionAnswer[]
   status          GameStatus[]
   gameId          Int
+  
   
 }
 
