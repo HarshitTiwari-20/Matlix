@@ -2,6 +2,7 @@ import { JWT_SECRET } from './../http-backend/config';
 import { verify, type JwtPayload } from "jsonwebtoken";
 import { WebSocket, WebSocketServer } from "ws";
 import { prisma, type Question } from "@repo/db/client";
+import type { Game, User } from './types';
 
 const wss = new WebSocketServer({ port: 8080 });
 //const JWT_SECRET = process.env.JWT_SECRET ;
@@ -81,7 +82,7 @@ wss.on("connection", async (socket, req) => {
       let existingGame: Game | null = null;   
       // runningGame = existinggame
 
-      for (const game of games.values()) {
+      for (const [gameId, game] of games.entries()) {
         if (
           game.status === "SEARCHING_FOR_PLAYER" &&
           !game.members.some((member) => member.id === user.id)
@@ -92,12 +93,13 @@ wss.on("connection", async (socket, req) => {
       }
 
       if (existingGame) {
-        existingGame.members.push({
+        const existingGameFetch = games.get(existingGame.id)!;
+        existingGameFetch.members.push({
           id: user.id,
           name: user.username,
           ws
         });
-        existingGame.status = "RUNNING";
+        existingGameFetch.status = "RUNNING";
       } else {
         const gameId = crypto.randomUUID();
         games.set(gameId, {
@@ -126,6 +128,18 @@ wss.on("connection", async (socket, req) => {
             }),
           );
         });
+
+        // ws.on("message", (event) => {
+        //   const parsedData = JSON.parse(event.toString());
+
+        //   if( parsedData.type == "PLAY_GAME"){
+        //     const {} = parsedData.payload;
+
+        //     let runningGame: Game | null = null;
+
+        //     for ( const [ gameId, game] of games.entries())
+        //   }
+        // })
       }
     }
   });
