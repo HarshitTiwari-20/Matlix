@@ -1,17 +1,21 @@
-import express from "express";
-import { authRouter } from "./routes/auth.routes";
+import { prisma } from "@repo/db/client";
+import { createApp } from "./app";
+import { HTTP_PORT } from "./config";
+import type { AuthDb } from "./routes/auth.routes";
 
-const app = express();
+const app = createApp(prisma as unknown as AuthDb);
 
-app.use(express.json());
-
-app.get("/", (req, res) => {
-  res.send("Hello World");
+const server = app.listen(HTTP_PORT, () => {
+  console.log(`HTTP server listening on http://localhost:${HTTP_PORT}`);
 });
 
-app.use("/api/v1/auth", authRouter);
+async function shutdown(signal: string) {
+  console.log(`Received ${signal}, shutting down...`);
+  server.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+}
 
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
-});
-
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));

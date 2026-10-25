@@ -1,21 +1,12 @@
-# bun-react-tailwind-template
+# Frontend
 
-To install dependencies:
-
-```bash
-bun install
-```
-
-To start a development server:
+Next.js 16 app with the landing page, auth screens, and live play arena.
+See the [root README](../../README.md) for setup and API/WebSocket details.
 
 ```bash
-bun dev
+cp .env.example .env.local
+bun run dev      # http://localhost:3000
+bun run test
+bun run lint
+bun run build
 ```
-
-To run for production:
-
-```bash
-bun start
-```
-
-This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.

@@ -1,15 +1,12 @@
-# http-backend
+# HTTP backend
 
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
+Express 5 API for registration, login, and the authenticated `/me` endpoint.
+See the [root README](../../README.md) for architecture, environment setup, and
+the full API contract.
 
 ```bash
-bun run index.ts
+cp .env.example .env
+bun run dev      # http://localhost:3001
+bun run test
+bun run check-types
 ```
-
-This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.

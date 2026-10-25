@@ -1,15 +1,11 @@
-# ws-backend
+# WebSocket backend
 
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
+Matchmaking and live 1v1 math battles over WebSockets, backed by an in-memory
+game engine. See the [root README](../../README.md) for the protocol and setup.
 
 ```bash
-bun run index.ts
+cp .env.example .env
+bun run dev      # ws://localhost:8080
+bun run test
+bun run check-types
 ```
-
-This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.

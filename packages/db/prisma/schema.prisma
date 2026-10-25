@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,108 +5,126 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-
 }
 
-
-//------ Recheck-------
-
 model Users {
-  id              String @id @default(uuid())
-  email           String @unique
-  password        String 
-  username        String @unique
-  rating          UserRating?
-  gameMember      GameMember[]
-  questionAnswer  QuestionAnswer[]
-  receiver        Friends[]     @relation("receiver")
-  sender          Friends[]     @relation("sender")
+  id             String           @id @default(uuid())
+  email          String           @unique
+  password       String
+  username       String           @unique
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  rating         UserRating?
+  gameMember     GameMember[]
+  questionAnswer QuestionAnswer[]
+  receiver       Friends[]        @relation("receiver")
+  sender         Friends[]        @relation("sender")
 }
 
 model Game {
-  id              String @id @default(uuid())
-  timelimit       Int
-  startedAt       DateTime
-  endsAt          DateTime
-  gameMember      GameMember[]
-  question        Question[]
-  Answer          QuestionAnswer[]
-  status          GameStatus[]
-  gameId          Int
-  
-  
-}
+  id         String           @id @default(uuid())
+  timeLimit  Int              @default(60)
+  startedAt  DateTime?
+  endsAt     DateTime?
+  winnerId   String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  status     GameStatus       @default(Searching_for_Player)
+  gameMember GameMember[]
+  question   Question[]
+  answers    QuestionAnswer[]
 
+  @@index([status])
+  @@index([createdAt])
+}
 
 model GameMember {
-  id     String  @id  @default(uuid())
-  gameId String  
-  game   Game    @relation(references: [id], fields: [gameId])
-  userId String  
-  user   Users   @relation(references: [id], fields: [userId])
+  id        String            @id @default(uuid())
+  gameId    String
+  game      Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId    String
+  user      Users             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score     Int               @default(0)
+  status    GameMemberStatus?
+  createdAt DateTime          @default(now())
 
-  status  GameMemberStatus
+  @@unique([gameId, userId])
+  @@index([userId])
 }
-enum GameMemberStatus{
+
+enum GameMemberStatus {
   WON
   LOSS
 }
 
 enum GameStatus {
-  Runnig 
+  Running
   Searching_for_Player
   Ended
 }
 
 model UserRating {
-  id    String    @id @default(uuid())
-  userId String   @unique
-  user   Users    @relation(references: [id], fields: [userId])
-  rating  Int
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      @default(1000)
+  updatedAt DateTime @updatedAt
 }
-
 
 model Friends {
-  id          String    @id   @default(uuid())
-  status      FriendsStatus   @default(pending)
-  receiverId  String
-  senderId    String
+  id         String        @id @default(uuid())
+  status     FriendsStatus @default(pending)
+  receiverId String
+  senderId   String
+  createdAt  DateTime      @default(now())
+  receiver   Users         @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     Users         @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
 
-  receiver    Users     @relation("receiver" ,fields: [receiverId], references: [id])
-  sender      Users     @relation("sender"   ,fields: [senderId], references: [id])
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
 }
 
-enum FriendsStatus{
+enum FriendsStatus {
   accepted
   rejected
   pending
 }
 
-
 model Question {
-  id          String        @id     @default(uuid())
-  gameId      String
-  game        Game          @relation(fields: [gameId], references: [id])
-  answer      QuestionAnswer[]
-  operation1  Int
-  operation2  Int
-  sign        QuestionSign
+  id         String           @id @default(uuid())
+  gameId     String
+  game       Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  answers    QuestionAnswer[]
+  operation1 Int
+  operation2 Int
+  sign       QuestionSign
+  answer     Int
+  position   Int              @default(0)
+  createdAt  DateTime         @default(now())
+
+  @@index([gameId])
 }
 
 model QuestionAnswer {
-  id          String      @id @default(uuid())
-  questionId  String
-  question    Question    @relation(fields: [questionId], references: [id])
-  answer      Int
-  gameId      String
-  game        Game        @relation(fields: [gameId], references: [id])
-  userId      String
-  user        Users       @relation(fields: [userId], references: [id])
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answer     Int
+  gameId     String
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId     String
+  user       Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  correct    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([questionId])
+  @@index([gameId])
+  @@index([userId])
 }
 
-enum QuestionSign{
-  SUM
+enum QuestionSign {
+  PLUS
   MINUS
-  MUL
-  DIV
+  MULTIPLICATION
+  DIVIDE
 }

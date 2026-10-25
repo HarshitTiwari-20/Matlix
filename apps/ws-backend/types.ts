@@ -1,37 +1,43 @@
-import { WebSocket } from "ws";
+export type QuestionSign = "PLUS" | "MINUS" | "MULTIPLICATION" | "DIVIDE";
 
-export type GameMember = {
-    id: string;
-    name: string;
-  };
-  
-  export type Question = {
-    id: string,
-    operation1: number,
-    operation2: number,
-    sign: "PLUS" | "MINUS" | "MULTIPLICATION" | "DIVIDE";
-  }
+export type PublicQuestion = {
+  id: string;
+  operation1: number;
+  operation2: number;
+  sign: QuestionSign;
+};
 
-  export type questionSign = "MINUS" | "PLUS" | "DIVIDE" | "MULTIPLICATION"; 
-  
-  export type Answer = {
-    id: string,
-    answer: number,
-    questionId: string
-  }
-  
-  export type Game = {
-    id: string;
-    members: User[];
-    adminId: string;
-    status: "SEARCHING_FOR_PLAYER" | "RUNNING" | "ENDED";
-    questions: Question[];
-    answers: Answer[];
-  };
-  
-  export type User = {
-    name: string;
-    ws: WebSocket;
-    id: string;
-  };
-  
+export type Question = PublicQuestion & {
+  answer: number;
+};
+
+export type Answer = {
+  id: string;
+  userId: string;
+  answer: number;
+  questionId: string;
+  correct: boolean;
+};
+
+export type GamePlayer = {
+  id: string;
+  name: string;
+};
+
+export type GameStatus = "SEARCHING_FOR_PLAYER" | "RUNNING" | "ENDED";
+
+export type Game = {
+  id: string;
+  adminId: string;
+  status: GameStatus;
+  members: GamePlayer[];
+  questions: Question[];
+  answers: Answer[];
+  progress: Record<string, number>;
+  scores: Record<string, number>;
+  startedAt?: number;
+};
+
+export type User = GamePlayer & {
+  ws: { send: (data: string) => void; close: (code?: number, reason?: string) => void };
+};

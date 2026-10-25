@@ -3,16 +3,20 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@repo/db": "workspace:*",
-    "@repo/common": "workspace:*"
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts",
+    "test": "bun test",
+    "check-types": "tsc --noEmit"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "@repo/common": "workspace:*",
+    "@repo/db": "workspace:*",
     "@types/bcryptjs": "^3.0.0",
+    "@types/bun": "latest",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "bcryptjs": "^3.0.3",

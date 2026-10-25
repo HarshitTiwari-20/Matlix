@@ -1,151 +1,34 @@
-import { JWT_SECRET } from './../http-backend/config';
-import { verify, type JwtPayload } from "jsonwebtoken";
-import { WebSocket, WebSocketServer } from "ws";
-import { prisma, type Question } from "@repo/db/client";
-import type { Game, User } from './types';
+import { WebSocketServer } from "ws";
+import { prisma } from "@repo/db/client";
+import { HEARTBEAT_MS, JWT_SECRET, WS_PORT } from "./config";
+import { createGameServer, type LookupUser } from "./server";
 
-const wss = new WebSocketServer({ port: 8080 });
-//const JWT_SECRET = process.env.JWT_SECRET ;
-const onlineUsers: Map<string, User> = new Map();
-const games: Map<string, Game> = new Map();
+const lookupUser: LookupUser = async (userId) => {
+  const user = await prisma.users.findUnique({ where: { id: userId } });
+  return user ? { id: user.id, username: user.username } : null;
+};
 
+const wss = new WebSocketServer({ port: WS_PORT });
+const gameServer = createGameServer({
+  wss,
+  lookupUser,
+  jwtSecret: JWT_SECRET,
+  heartbeatMs: HEARTBEAT_MS,
+});
 
-type ExtendedWs = WebSocket & { userId: string };
+wss.on("listening", () => {
+  console.log(`WebSocket server listening on ws://localhost:${WS_PORT}`);
+});
 
-function broadcastOnlineUsers() {
-  const payload = {
-    type: "OnlineUsers",
-    payload: {
-      users: Array.from(onlineUsers.values()).map((onlineUser) => ({
-        name: onlineUser.name,
-        id: onlineUser.id,
-      })),
-    },
-  };
-
-  wss.clients.forEach((client) => {
-    client.send(JSON.stringify(payload));
+async function shutdown(signal: string) {
+  console.log(`Received ${signal}, shutting down...`);
+  gameServer.close();
+  for (const client of wss.clients) client.close(1001, "Server shutting down");
+  wss.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
   });
 }
 
-wss.on("connection", async (socket, req) => {
-  const ws = socket as ExtendedWs;
-  const token = req.url?.split("?token=")[1];
-  if (!token) {
-    ws.close(1008, "Unauthorized");
-    return;
-  }
-
-  let decoded: JwtPayload;
-  try {
-    decoded = verify(token, JWT_SECRET) as JwtPayload;
-  } catch {
-    ws.close(1008, "Unauthorized");
-    return;
-  }
-
-  const userId =
-    typeof decoded.userId === "string" ? decoded.userId : String(decoded.userId ?? "");
-  if (!userId) {
-    ws.close(1008, "Unauthorized");
-    return;
-  }
-
-  const user = await prisma.users.findUnique({
-    where: { id: userId },
-  });
-
-  if (!user) {
-    ws.close(1008, "Unauthorized");
-    return;
-  }
-
-  ws.userId = user.id;
-
-  onlineUsers.set(user.id, {
-    name: user.username,
-    ws,
-    id: user.id,
-  });
-
-  broadcastOnlineUsers();
-
-  ws.on("message", (event) => {
-    let parsedData: { type?: string; payload?: unknown };
-    try {
-      parsedData = JSON.parse(event.toString());
-    } catch {
-      return;
-    }
-
-    if (parsedData.type === "START_GAME") {
-      let existingGame: Game | null = null;   
-      // runningGame = existinggame
-
-      for (const [gameId, game] of games.entries()) {
-        if (
-          game.status === "SEARCHING_FOR_PLAYER" &&
-          !game.members.some((member) => member.id === user.id)
-        ) {
-          existingGame = game;
-          break;
-        }
-      }
-
-      if (existingGame) {
-        const existingGameFetch = games.get(existingGame.id)!;
-        existingGameFetch.members.push({
-          id: user.id,
-          name: user.username,
-          ws
-        });
-        existingGameFetch.status = "RUNNING";
-      } else {
-        const gameId = crypto.randomUUID();
-        games.set(gameId, {
-          id: gameId,
-          members: [
-            {
-              id: user.id,
-              name: user.username,
-              ws
-            },
-          ],
-          adminId: user.id,
-          status: "SEARCHING_FOR_PLAYER",
-          questions: [],
-          answers: [],
-        });
-
-        wss.clients.forEach((wsAll) => {
-          if (wsAll === ws) return;
-          wsAll.send(
-            JSON.stringify({
-              type: "GAME_REQUEST",
-              payload: {
-                username: user.username,
-              },
-            }),
-          );
-        });
-
-        // ws.on("message", (event) => {
-        //   const parsedData = JSON.parse(event.toString());
-
-        //   if( parsedData.type == "PLAY_GAME"){
-        //     const {} = parsedData.payload;
-
-        //     let runningGame: Game | null = null;
-
-        //     for ( const [ gameId, game] of games.entries())
-        //   }
-        // })
-      }
-    }
-  });
-
-  ws.on("close", () => {
-    onlineUsers.delete(user.id);
-    broadcastOnlineUsers();
-  });
-});
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));

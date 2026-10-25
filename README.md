@@ -1,159 +1,159 @@
-# Turborepo starter
+# Matiks
 
-This Turborepo starter is maintained by the Turborepo core team.
+Live 1v1 mental math battles. Two players receive the same ten equations, answer
+as fast as they can, and the first to finish the set wins. Built as a Bun +
+Turborepo monorepo with a Next.js frontend, an Express auth API, and a
+WebSocket match server.
 
-## Using this example
+## Architecture
 
-Run the following command:
-
-```sh
-npx create-turbo@latest
+```text
+apps/frontend (Next.js 16 / React 19 / Tailwind 4)
+   │  REST: register / login / me          WS: matchmaking + answers
+   ▼                                       ▼
+apps/http-backend (Express 5)          apps/ws-backend (ws)
+   │  bcrypt + JWT                         │  in-memory GameEngine
+   └──────────────┬────────────────────────┘
+                  ▼
+        packages/db (Prisma 7 + pg)
+                  ▼
+             PostgreSQL
 ```
 
-## What's inside?
+Shared concerns:
 
-This Turborepo includes the following packages/apps:
+- `packages/common` — Zod request schemas, username/password rules, JWT token
+  constants, and the shared field-error formatter.
+- `packages/db` — Prisma client, schema, migration, and database env loading.
 
-### Apps and Packages
+The two backends trust the same JWT, so **`JWT_SECRET` must be identical** in
+`apps/http-backend/.env` and `apps/ws-backend/.env`. Tokens are signed with the
+issuer `matiks` and audience `matiks-web` and expire after 7 days.
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `@next/eslint-plugin-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## Packages
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+| Path                  | Description                                                        |
+| --------------------- | ------------------------------------------------------------------ |
+| `apps/frontend`       | Landing page, login/register, and the live play arena.             |
+| `apps/http-backend`   | Express REST API: `POST /register`, `POST /login`, `GET /me`.       |
+| `apps/ws-backend`     | WebSocket server, matchmaking, question generation, scoring.       |
+| `packages/common`     | Shared validation and auth constants.                              |
+| `packages/db`         | Prisma schema/client for users, ratings, games, questions, friends.|
+| `packages/ui`         | Unused starter component library.                                  |
 
-### Utilities
+## Prerequisites
 
-This Turborepo has some additional tools already setup for you:
+- [Bun](https://bun.sh) 1.3+
+- Node.js 22+ (Bun runs the apps; Node is used by some tooling)
+- PostgreSQL 14+
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+## Setup
 
-### Build
+```bash
+bun install
 
-To build all apps and packages, run the following command:
+# Environment files (examples are committed; real .env files are ignored)
+cp packages/db/.env.example packages/db/.env
+cp apps/http-backend/.env.example apps/http-backend/.env
+cp apps/ws-backend/.env.example apps/ws-backend/.env
+cp apps/frontend/.env.example apps/frontend/.env.local
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+# Point packages/db/.env at your PostgreSQL instance, then:
+bun run db:migrate     # or: bun run db:push
+bun run dev
 ```
 
-Without global `turbo`, use your package manager:
+Default ports:
 
-```sh
-cd my-turborepo
-npx turbo build
-bun exec turbo build
-bun exec turbo build
+| Service        | URL                     |
+| -------------- | ----------------------- |
+| Frontend       | `http://localhost:3000` |
+| HTTP API       | `http://localhost:3001` |
+| WebSocket      | `ws://localhost:8080`   |
+
+If you change ports, update `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_WS_URL` in
+`apps/frontend/.env.local` and the matching backend env files.
+
+## Scripts
+
+| Command              | What it does                                             |
+| -------------------- | -------------------------------------------------------- |
+| `bun run dev`        | Runs all apps through Turborepo.                         |
+| `bun run build`      | Production build (Next.js).                              |
+| `bun run test`       | Runs all unit and integration tests with `bun test`.     |
+| `bun run check-types`| Type-checks every workspace.                             |
+| `bun run lint`       | ESLint for the frontend and UI package.                  |
+| `bun run db:migrate` | Creates/applies Prisma dev migrations.                   |
+| `bun run db:push`    | Pushes the schema without creating a migration.          |
+| `bun run db:deploy`  | Applies committed migrations (use in production/CI).     |
+| `bun run db:generate`| Regenerates the Prisma client.                           |
+| `bun run db:studio`  | Opens Prisma Studio.                                     |
+
+## HTTP API
+
+Base URL: `http://localhost:3001`
+
+| Method | Path                 | Auth   | Body                              |
+| ------ | -------------------- | ------ | --------------------------------- |
+| `GET`  | `/health`            | —      | —                                 |
+| `POST` | `/api/v1/auth/register` | —   | `{ email, password, username? }`  |
+| `POST` | `/api/v1/auth/login` | —      | `{ email, password }`             |
+| `GET`  | `/api/v1/auth/me`    | Bearer | —                                 |
+
+Validation failures return `400` with `{ message, errors }`. Duplicate emails
+return `409`. Bad credentials return a generic `401 Invalid email or password`.
+Successful auth responses include `{ data: { token, user } }`; the user object
+never includes the password hash.
+
+## WebSocket protocol
+
+Connect to `ws://localhost:8080?token=<jwt>`. Invalid or expired tokens are
+closed with code `1008`. Unknown users are also rejected. The server pings every
+30 seconds and drops dead sockets.
+
+Client → server:
+
+| Type           | Payload                                  |
+| -------------- | ---------------------------------------- |
+| `START_GAME`   | —                                        |
+| `SUBMIT_ANSWER`| `{ gameId, questionId, answer }`         |
+| `CANCEL_GAME`  | —                                        |
+
+Server → client:
+
+| Type              | Purpose                                                    |
+| ----------------- | ---------------------------------------------------------- |
+| `ONLINE_USERS`    | Online roster broadcast.                                   |
+| `WAITING`         | Player is queued; includes `gameId`.                       |
+| `GAME_STARTED`    | Match begins/resumes: question, index, score, members.     |
+| `WRONG_ANSWER`    | Answer was incorrect; the same question stays.             |
+| `NEXT_QUESTION`   | Correct answer; next question, index, and score.           |
+| `PLAYER_PROGRESS` | Opponent's live score and progress.                        |
+| `GAME_OVER`       | Final scores, winner (`null` = draw), members.             |
+| `CANCELLED`       | Search cancelled.                                          |
+| `ERROR`           | `{ message }` for invalid actions or payloads.             |
+
+Correct answers advance the player and add one point. Wrong answers do not
+advance. Reconnecting resumes the running match at the player's current index.
+Disconnecting from a running match awards the win to the opponent. Finished
+games are removed from memory.
+
+## Testing
+
+```bash
+bun run test          # all unit + integration tests
+bun run check-types   # TypeScript across the workspace
+bun run lint          # frontend + UI ESLint
+bun run build         # Next.js production build
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Coverage includes:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- `packages/common` — schema validation and error formatting.
+- `apps/http-backend` — full register/login/me flow, CORS, malformed input,
+  duplicate accounts, JWT audience/expiry, and deleted users (in-memory DB).
+- `apps/ws-backend` — question generation, game-engine edge cases, and a real
+  WebSocket integration suite covering matchmaking, live play, reconnect,
+  disconnect, cancel, unauthorized tokens, and game cleanup.
+- `apps/frontend` — credential validation, session storage, API error mapping,
+  equation formatting, and the game-state reducer.
