@@ -136,6 +136,7 @@ describe("match flow", () => {
 
   test("advances on a correct answer", () => {
     const state = apply(startedState(), "NEXT_QUESTION", {
+      userId: player.id,
       question: { ...firstQuestion, id: "q2" },
       index: 1,
       score: 1,
@@ -148,20 +149,28 @@ describe("match flow", () => {
     expect(state.flash).toBe("ok");
   });
 
-  test("tracks opponent progress live", () => {
-    const state = apply(startedState(), "PLAYER_PROGRESS", {
+  test("moves the question for both players when the opponent answers", () => {
+    const state = apply(startedState(), "NEXT_QUESTION", {
       userId: opponent.id,
-      score: 4,
-      progress: 4,
+      question: { ...firstQuestion, id: "q2" },
+      index: 1,
+      score: 1,
       totalQuestions: 10,
     });
-    expect(state.scores.opp).toBe(4);
-    expect(progressFor(state, opponent.id)).toBe(4);
+    expect(state.index).toBe(1);
+    expect(state.question?.id).toBe("q2");
+    expect(state.scores.opp).toBe(1);
+    expect(state.progresses.opp).toBe(1);
+    expect(state.progresses.me).toBe(0);
+    expect(state.flash).toBeNull();
   });
 
-  test("ignores opponent progress without a user id", () => {
-    const initial = startedState();
-    expect(apply(initial, "PLAYER_PROGRESS", { score: 3 })).toBe(initial);
+  test("rejects a malformed next question", () => {
+    const state = apply(startedState(), "NEXT_QUESTION", {
+      userId: player.id,
+      question: { id: "q2", sign: "NOPE" },
+    });
+    expect(state.error).toContain("invalid question");
   });
 
   test("ends the match", () => {
@@ -249,10 +258,11 @@ describe("selectors", () => {
   });
 
   test("rankedMembers sorts by score", () => {
-    const state = apply(startedState(), "PLAYER_PROGRESS", {
+    const state = apply(startedState(), "NEXT_QUESTION", {
       userId: opponent.id,
+      question: firstQuestion,
+      index: 1,
       score: 7,
-      progress: 7,
     });
     expect(rankedMembers(state).map((member) => member.id)).toEqual(["opp", "me"]);
   });

@@ -167,6 +167,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
         const index = numberField(payload, "index", 0);
         const score = numberField(payload, "score", 0);
+        const scores = { ...asScores(payload.scores), [state.selfId]: score };
+        const progresses = { ...state.progresses };
+        for (const key of Object.keys(scores)) {
+          progresses[key] = scores[key]!;
+        }
 
         return {
           ...state,
@@ -174,8 +179,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           gameId: stringField(payload, "gameId") || state.gameId,
           question,
           members: asMembers(payload.members),
-          scores: { ...asScores(payload.scores), [state.selfId]: score },
-          progresses: { ...state.progresses, [state.selfId]: index },
+          scores,
+          progresses,
           index,
           total: numberField(payload, "totalQuestions", 10),
           winnerId: null,
@@ -195,31 +200,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           return { ...state, error: "Received an invalid question from the server." };
         }
 
+        const userId = stringField(payload, "userId") || state.selfId;
         const index = numberField(payload, "index", 0);
-        const score = numberField(payload, "score", state.scores[state.selfId] ?? 0);
+        const score = numberField(payload, "score", state.scores[userId] ?? 0);
 
         return {
           ...state,
           question,
           index,
           total: numberField(payload, "totalQuestions", state.total),
-          scores: { ...state.scores, [state.selfId]: score },
-          progresses: { ...state.progresses, [state.selfId]: index },
-          flash: "ok",
+          scores: { ...state.scores, [userId]: score },
+          progresses: { ...state.progresses, [userId]: score },
+          flash: userId === state.selfId ? "ok" : state.flash,
           error: "",
-        };
-      }
-
-      if (type === "PLAYER_PROGRESS") {
-        const userId = stringField(payload, "userId");
-        if (!userId) return state;
-        return {
-          ...state,
-          scores: { ...state.scores, [userId]: numberField(payload, "score", 0) },
-          progresses: {
-            ...state.progresses,
-            [userId]: numberField(payload, "progress", 0),
-          },
         };
       }
 

@@ -136,23 +136,8 @@ export function createGameServer({
 
       if (result.type === "ERROR") return;
 
-      const game = engine.games.get(gameId);
-      if (game) {
-        notifyGameMembers(
-          gameId,
-          {
-            type: "PLAYER_PROGRESS",
-            payload: {
-              gameId,
-              userId: user.id,
-              name: user.name,
-              score: game.scores[user.id] ?? 0,
-              progress: game.progress[user.id] ?? 0,
-              totalQuestions: game.questions.length,
-            },
-          },
-          user.id,
-        );
+      if (result.type === "NEXT_QUESTION") {
+        notifyGameMembers(gameId, result, user.id);
       }
 
       if (result.type === "GAME_OVER") {

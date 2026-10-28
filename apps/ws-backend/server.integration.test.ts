@@ -190,15 +190,16 @@ describe("websocket server", () => {
     expect(wonB.payload?.winnerId).toBe("a");
     expect((wonA.payload?.scores as Record<string, number>).a).toBe(game.questions.length);
 
-    const progress = await b.next("PLAYER_PROGRESS");
-    expect(progress.payload?.userId).toBe("a");
-    expect(progress.payload?.progress).toBe(1);
+    const broadcast = await b.next("NEXT_QUESTION");
+    expect(broadcast.payload?.userId).toBe("a");
+    expect(broadcast.payload?.index).toBe(1);
+    expect(broadcast.payload?.question).not.toHaveProperty("answer");
 
     expect(gameServer.engine.games.has(gameId)).toBe(false);
     expect(gameServer.engine.playerGame.size).toBe(0);
   });
 
-  test("a wrong answer does not advance the player", async () => {
+  test("a wrong answer does not advance the match", async () => {
     const { gameServer, port } = await setup();
     const a = await open(port, tokenFor("a"));
     const b = await open(port, tokenFor("b"));
@@ -221,6 +222,7 @@ describe("websocket server", () => {
 
     const wrong = await a.next("WRONG_ANSWER");
     expect(wrong.payload?.questionId).toBe(question.id);
+    expect(game.index).toBe(0);
     expect(game.progress.a).toBe(0);
   });
 

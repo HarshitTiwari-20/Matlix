@@ -22,20 +22,10 @@ export type GameEvent =
       type: "NEXT_QUESTION";
       payload: {
         gameId: string;
+        userId: string;
         question: PublicQuestion;
         index: number;
         score: number;
-        totalQuestions: number;
-      };
-    }
-  | {
-      type: "PLAYER_PROGRESS";
-      payload: {
-        gameId: string;
-        userId: string;
-        name: string;
-        score: number;
-        progress: number;
         totalQuestions: number;
       };
     }
@@ -96,6 +86,7 @@ export class GameEngine {
       members: [player],
       questions: [],
       answers: [],
+      index: 0,
       progress: { [player.id]: 0 },
       scores: { [player.id]: 0 },
     };
@@ -123,7 +114,7 @@ export class GameEngine {
       return { type: "ERROR", payload: { message: "Invalid answer" } };
     }
 
-    const index = game.progress[userId] ?? 0;
+    const index = game.index;
     const current = game.questions[index];
     if (!current || current.id !== questionId) {
       return { type: "ERROR", payload: { message: "Question mismatch" } };
@@ -143,19 +134,21 @@ export class GameEngine {
     }
 
     game.scores[userId] = (game.scores[userId] ?? 0) + 1;
-    game.progress[userId] = index + 1;
+    game.progress[userId] = game.scores[userId]!;
+    game.index = index + 1;
 
-    if ((game.progress[userId] ?? 0) >= game.questions.length) {
+    if (game.index >= game.questions.length) {
       return this.finishGame(game);
     }
 
-    const next = game.questions[game.progress[userId]!]!;
+    const next = game.questions[game.index]!;
     return {
       type: "NEXT_QUESTION",
       payload: {
         gameId: game.id,
+        userId,
         question: toPublicQuestion(next),
-        index: game.progress[userId]!,
+        index: game.index,
         score: game.scores[userId]!,
         totalQuestions: game.questions.length,
       },
@@ -228,7 +221,7 @@ export class GameEngine {
   }
 
   private rejoin(player: GamePlayer, game: Game): GameEvent {
-    const index = game.progress[player.id] ?? 0;
+    const index = game.index;
     const question = game.questions[index];
     if (!question) {
       return this.finishGame(game);
@@ -245,7 +238,7 @@ export class GameEngine {
     playerId: string,
     justMatched: boolean,
   ): GameStartedPayload {
-    const index = game.progress[playerId] ?? 0;
+    const index = game.index;
     const question = game.questions[index]!;
     return {
       gameId: game.id,

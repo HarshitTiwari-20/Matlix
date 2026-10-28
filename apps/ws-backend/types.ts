@@ -33,6 +33,7 @@ export type Game = {
   members: GamePlayer[];
   questions: Question[];
   answers: Answer[];
+  index: number;
   progress: Record<string, number>;
   scores: Record<string, number>;
   startedAt?: number;

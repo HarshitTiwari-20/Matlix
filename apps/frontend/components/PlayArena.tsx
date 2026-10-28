@@ -363,19 +363,19 @@ function Arena({ user, token }: { user: AuthUser; token: string }) {
             <ul className="mt-3 flex flex-col gap-2.5 text-xs leading-relaxed text-muted">
               <li className="flex gap-2">
                 <span className="text-accent">01</span>
-                Both players receive the same ten equations.
+                Both players race on the same equation at the same time.
               </li>
               <li className="flex gap-2">
                 <span className="text-accent">02</span>
-                A correct answer advances you one question and scores a point.
+                A correct answer scores a point and moves both players to the next equation.
               </li>
               <li className="flex gap-2">
                 <span className="text-accent">03</span>
-                A wrong answer keeps you on the same equation.
+                A wrong answer keeps the equation up until either player solves it.
               </li>
               <li className="flex gap-2">
                 <span className="text-accent">04</span>
-                First to finish the set takes the match.
+                Highest score when the set ends takes the match.
               </li>
             </ul>
           </div>

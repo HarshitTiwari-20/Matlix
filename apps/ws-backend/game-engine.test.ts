@@ -69,6 +69,7 @@ describe("answering", () => {
 
     const wrong = engine.submitAnswer("a", game.id, first.id, first.answer + 1);
     expect(wrong.type).toBe("WRONG_ANSWER");
+    expect(game.index).toBe(0);
     expect(game.progress.a).toBe(0);
     expect(game.scores.a).toBe(0);
     expect(game.answers).toHaveLength(1);
@@ -76,9 +77,37 @@ describe("answering", () => {
 
     const next = engine.submitAnswer("a", game.id, first.id, first.answer);
     expect(next.type).toBe("NEXT_QUESTION");
+    expect(game.index).toBe(1);
     expect(game.progress.a).toBe(1);
     expect(game.scores.a).toBe(1);
     expect(game.answers).toHaveLength(2);
+  });
+
+  test("a correct answer moves both players to the next question", () => {
+    const { engine, game } = matchedGame();
+    const first = game.questions[0]!;
+    const second = game.questions[1]!;
+
+    const next = engine.submitAnswer("a", game.id, first.id, first.answer);
+    expect(next.type).toBe("NEXT_QUESTION");
+    if (next.type !== "NEXT_QUESTION") return;
+    expect(next.payload.userId).toBe("a");
+    expect(next.payload.question.id).toBe(second.id);
+    expect(game.index).toBe(1);
+    expect(game.progress.b).toBe(0);
+
+    const stale = engine.submitAnswer("b", game.id, first.id, first.answer);
+    expect(stale.type).toBe("ERROR");
+    if (stale.type === "ERROR") {
+      expect(stale.payload.message).toBe("Question mismatch");
+    }
+
+    const bNext = engine.submitAnswer("b", game.id, second.id, second.answer);
+    expect(bNext.type).toBe("NEXT_QUESTION");
+    if (bNext.type !== "NEXT_QUESTION") return;
+    expect(bNext.payload.userId).toBe("b");
+    expect(bNext.payload.question.id).toBe(game.questions[2]!.id);
+    expect(game.index).toBe(2);
   });
 
   test("rejects non-integer answers", () => {
@@ -99,7 +128,7 @@ describe("answering", () => {
     expect(engine.submitAnswer("stranger", game.id, question.id, 1).type).toBe("ERROR");
   });
 
-  test("rejects an answer for a question the player is not on", () => {
+  test("rejects an answer for a question the match is not on", () => {
     const { engine, game } = matchedGame();
     const future = game.questions[2]!;
     const result = engine.submitAnswer("a", game.id, future.id, future.answer);
