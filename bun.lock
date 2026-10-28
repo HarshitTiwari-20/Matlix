@@ -66,10 +66,8 @@
     "packages/common": {
       "name": "@repo/common",
       "dependencies": {
-        "zod": "^4.6.5",
-      },
-      "devDependencies": {
         "@types/bun": "latest",
+        "zod": "^4.6.5",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -80,12 +78,12 @@
       "dependencies": {
         "@prisma/adapter-pg": "^7.10.0",
         "@prisma/client": "7",
+        "@types/bun": "latest",
+        "@types/pg": "^8.23.1",
         "dotenv": "^18.0.0",
         "pg": "^8.23.0",
       },
       "devDependencies": {
-        "@types/bun": "latest",
-        "@types/pg": "^8.23.1",
         "prisma": "^7.10.0",
       },
       "peerDependencies": {
