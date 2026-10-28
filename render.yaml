@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: matiks-http
+    runtime: docker
+    dockerfilePath: ./apps/http-backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: matiks-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+
+  - type: web
+    name: matiks-ws
+    runtime: docker
+    dockerfilePath: ./apps/ws-backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: matiks-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+
+databases:
+  - name: matiks-db
+    databaseName: matiks
+    plan: basic-256mb

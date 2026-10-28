@@ -142,6 +142,36 @@ set completes, and the higher score wins. Reconnecting resumes the running
 match at the shared round index. Disconnecting from a running match awards the
 win to the opponent. Finished games are removed from memory.
 
+## Deployment
+
+Both backends ship as Docker images (built from the repo root context):
+
+- `ghcr.io/<owner>/<repo>-http-backend` — Express REST API, listens on `3001`
+  (respects `PORT`).
+- `ghcr.io/<owner>/<repo>-ws-backend` — WebSocket match server, listens on
+  `8080` (respects `PORT` / `WS_PORT`).
+
+GitHub Actions (`.github/workflows/docker.yml`) builds and pushes both images
+to GHCR on every push to `main`, tagged `latest` and by commit SHA.
+
+### Render
+
+Deploy both backends as **Web Services** (Docker) and add a **Render
+PostgreSQL** for `DATABASE_URL`. `render.yaml` defines all three; or wire the
+services manually:
+
+| Service       | Type         | Image / Dockerfile          | Health check |
+| ------------- | ------------ | --------------------------- | ------------ |
+| `matiks-http` | Web Service  | `apps/http-backend/Dockerfile` | `/health` |
+| `matiks-ws`   | Web Service  | `apps/ws-backend/Dockerfile`   | `/health` |
+| `matiks-db`   | PostgreSQL   | —                           | —            |
+
+Required env vars: `DATABASE_URL` (Render Postgres), `JWT_SECRET` (must be
+identical on both services), and `CORS_ORIGIN` (the frontend URL, http
+backend only). The frontend can stay on Vercel — set `NEXT_PUBLIC_API_URL` /
+`NEXT_PUBLIC_WS_URL` to the Render service URLs. Run `bun run db:deploy`
+against the Render database once to apply migrations.
+
 ## Testing
 
 ```bash

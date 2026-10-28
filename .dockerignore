@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+.git
+.github
+**/.next
+**/generated
+**/.env
+**/.env.*
+**/*.test.ts
+tsconfig.tsbuildinfo
+**/tsconfig.tsbuildinfo
+README.md
+**/README.md
