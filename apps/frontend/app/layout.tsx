@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     template: "%s | Matiks",
   },
   description:
-    "Race a real opponent through ten mental math questions. Same questions, live scoring, first to finish wins.",
+    "Race a real opponent through ten mental math questions. Same equation, live scoring, highest score wins.",
   applicationName: "Matiks",
   keywords: ["mental math", "math game", "1v1", "live quiz", "multiplayer"],
   openGraph: {

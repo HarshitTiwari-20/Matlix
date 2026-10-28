@@ -1,8 +1,9 @@
 # Matiks
 
-Live 1v1 mental math battles. Two players receive the same ten equations, answer
-as fast as they can, and the first to finish the set wins. Built as a Bun +
-Turborepo monorepo with a Next.js frontend, an Express auth API, and a
+Live 1v1 mental math battles. Two players race on the same equation at the same
+time — a correct answer scores a point and moves both players to the next
+equation, and the highest score when the ten-question set ends wins. Built as a
+Bun + Turborepo monorepo with a Next.js frontend, an Express auth API, and a
 WebSocket match server.
 
 ## Architecture
@@ -127,16 +128,19 @@ Server → client:
 | `WAITING`         | Player is queued; includes `gameId`.                       |
 | `GAME_STARTED`    | Match begins/resumes: question, index, score, members.     |
 | `WRONG_ANSWER`    | Answer was incorrect; the same question stays.             |
-| `NEXT_QUESTION`   | Correct answer; next question, index, and score.           |
-| `PLAYER_PROGRESS` | Opponent's live score and progress.                        |
+| `NEXT_QUESTION`   | Correct answer by `userId`; next question, index, and      |
+|                   | score. Broadcast to both players so both screens move on.  |
 | `GAME_OVER`       | Final scores, winner (`null` = draw), members.             |
 | `CANCELLED`       | Search cancelled.                                          |
 | `ERROR`           | `{ message }` for invalid actions or payloads.             |
 
-Correct answers advance the player and add one point. Wrong answers do not
-advance. Reconnecting resumes the running match at the player's current index.
-Disconnecting from a running match awards the win to the opponent. Finished
-games are removed from memory.
+Both players share one round index and always see the same equation. A correct
+answer scores a point and advances the round for both screens; a wrong answer
+keeps the current equation up until either player solves it. Answers for a
+finished round are rejected with `Question mismatch`. The match ends when the
+set completes, and the higher score wins. Reconnecting resumes the running
+match at the shared round index. Disconnecting from a running match awards the
+win to the opponent. Finished games are removed from memory.
 
 ## Testing
 
