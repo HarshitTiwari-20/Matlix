@@ -156,9 +156,9 @@ to GHCR on every push to `main`, tagged `latest` and by commit SHA.
 
 ### Render
 
-Deploy both backends as **Web Services** (Docker) and add a **Render
-PostgreSQL** for `DATABASE_URL`. `render.yaml` defines all three; or wire the
-services manually:
+Deploy both backends as **Web Services** (Docker) and point `DATABASE_URL` at
+your own PostgreSQL instance (any provider — Neon, Supabase, self-hosted).
+`render.yaml` defines both services; or wire the services manually:
 
 | Service       | Type         | Image / Dockerfile          | Health check |
 | ------------- | ------------ | --------------------------- | ------------ |
